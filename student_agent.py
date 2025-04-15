@@ -444,7 +444,8 @@ def load_approximator_from_bin(filename='2048.bin'):
     approximator.add_feature(pattern([0, 1, 2, 4, 5, 6]))
     approximator.add_feature(pattern([4, 5, 6, 8, 9, 10]))
     approximator.load(filename)
-    print("loaded!!!")
+    if approximator is not None:
+        print("loaded!!!")
     return approximator
 
 
@@ -452,22 +453,42 @@ def load_approximator_from_bin(filename='2048.bin'):
 approximator = load_approximator_from_bin()
 
 def get_action(state, score):
-    env = Game2048Env()
-    #return random.choice([0, 1, 2, 3]) # Choose a random action
-    global approximator
-    # You can submit this random agent to evaluate the performance of a purely random strategy.
-    if approximator is None:
-        approximator = load_approximator_from_bin()
+    """
+    Choose the best action based on the N-Tuple Approximator
     
-    bitboard = np_to_board(state)
-    root = TD_MCTS_Node(bitboard, score)
-    td_mcts = TD_MCTS(approximator, iterations=500, exploration_constant=1.41, rollout_depth=20, gamma=0.99)
+    Args:
+        state: Current board state (4x4 numpy array)
+        score: Current game score
+        
+    Returns:
+        action: 0 (up), 1 (down), 2 (left), or 3 (right)
+    """
+    
+    global approximator
+    #approximator = load_approximator()
+    
+    # Load the approximator if not already loaded
+    if approximator is None:
+        return random.choice([0, 1, 2, 3])
+    
+    # Create a temporary environment to simulate actions
+    env = Game2048Env()
+    env.board = state.copy()
+    env.score = score
+    
+    td_mcts = TD_MCTS(env, approximator, iterations=500, exploration_constant=1.41, rollout_depth=20, gamma=0.99)
 
+    
+    root = TD_MCTS_Node(env,state, env.score)
+
+    # Run multiple simulations to build the MCTS tree
     for _ in range(td_mcts.iterations):
         td_mcts.run_simulation(root)
 
+    # Select the best action (based on highest visit count)
     best_act, _ = td_mcts.best_action_distribution(root)
-    print(score,best_act)
+    print("TD-MCTS selected action:", best_act)
+
     return best_act
 
 
