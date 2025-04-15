@@ -343,8 +343,8 @@ class TD_MCTS:
             adapter = BoardAdapter(env_copy)
             bit_board = adapter.sync_to_board()
 
-            if self.approximator.value(bit_board) is not None:
-              value = self.approximator.value(bit_board)
+            if self.approximator.estimate(bit_board) is not None:
+              value = self.approximator.estimate(bit_board)
             if value >= max_value:
                 max_value = value
 
