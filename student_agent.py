@@ -487,8 +487,26 @@ def get_action(state, score):
 
     # Select the best action (based on highest visit count)
     best_act, _ = td_mcts.best_action_distribution(root)
-    print("TD-MCTS selected action:", best_act)
+    
+    
+    return_act = -1
+    if best_act == 0: #up
+        return_act = 0
+    elif best_act == 1: #right
+        return_act = 3
+    elif best_act == 2: # down
+        return_act = 1
+    elif best_act == 3: #left
+        return_act = 2
+    else:
+        print("error act:",best_act)
+    
 
-    return best_act
+
+
+
+    print("TD-MCTS selected action:", return_act)
+
+    return return_act
 
 
