@@ -375,6 +375,7 @@ def np_to_board(np_board: np.ndarray) -> board:
     return b
 
 def load_approximator_from_bin(filename='2048.bin'):
+    print("loading...")
     board.lookup.init()
     approximator = learning()
     approximator.add_feature(pattern([0, 1, 2, 3, 4, 5]))
