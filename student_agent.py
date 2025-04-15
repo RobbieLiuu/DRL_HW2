@@ -382,6 +382,7 @@ def load_approximator_from_bin(filename='2048.bin'):
     approximator.add_feature(pattern([0, 1, 2, 4, 5, 6]))
     approximator.add_feature(pattern([4, 5, 6, 8, 9, 10]))
     approximator.load(filename)
+    print("loaded!!!")
     return approximator
 
 
