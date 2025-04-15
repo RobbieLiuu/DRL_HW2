@@ -1,3 +1,3 @@
 #!/bin/bash
 pip install --upgrade gdown
-gdown "https://drive.google.com/uc?id=1WtG6dqyExfuBrZ0lkySWTQ3gaF3BxB4C&export=download"
+gdown "https://drive.google.com/uc?id=1pjXQ0zy2JEGdROrOV17PCMnOzHThrN0Y&export=download"
