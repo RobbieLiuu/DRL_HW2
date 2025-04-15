@@ -340,7 +340,7 @@ class TD_MCTS:
             env_copy = copy.deepcopy(env)
             afterstate, _, _, _ = env_copy.step(action, add_random=False)
 
-            adapter = BoardAdapter(env)
+            adapter = BoardAdapter(env_copy)
             bit_board = adapter.sync_to_board()
 
             if self.approximator.value(bit_board) is not None:
