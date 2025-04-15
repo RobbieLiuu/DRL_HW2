@@ -132,7 +132,7 @@ class Game2048Env(gym.Env):
 
         return True
 
-    def step(self, action):
+    def step(self, action, add_random=True):
         """Execute one action"""
         assert self.action_space.contains(action), "Invalid action"
 
@@ -149,7 +149,7 @@ class Game2048Env(gym.Env):
 
         self.last_move_valid = moved  # Record if the move was valid
 
-        if moved:
+        if moved and add_random:
             self.add_random_tile()
 
         done = self.is_game_over()
