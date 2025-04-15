@@ -19,7 +19,7 @@ import random
 import struct
 import typing
 import abc
-from typing import Tuple
+from typing import Tuple, List
 
 def info(*argv) -> None:
     """
@@ -141,7 +141,7 @@ class board:
                 return raw | (self.right << (i << 4)), sc + self.score
 
             @staticmethod
-            def mvleft(row : int) -> Tuple[list[int], int]:
+            def mvleft(row : int) -> Tuple[List[int], int]:
                 buf = [t for t in row if t]
                 res, score = [], 0
                 while buf:
@@ -366,7 +366,7 @@ class feature(abc.ABC):
             exit(1)
 
     @staticmethod
-    def alloc(num : int) -> list[float]:
+    def alloc(num : int) -> List[float]:
         if not hasattr(feature.alloc, "total"):
             feature.alloc.total = 0
             feature.alloc.limit = (1 << 30) // 4 # 1G memory
@@ -403,7 +403,7 @@ class pattern(feature):
      pattern([ 0, 1, 2, 3, 4, 5 ], 4)
     """
 
-    def __init__(self, patt : list[int], iso : int = 8):
+    def __init__(self, patt : List[int], iso : int = 8):
         super().__init__(1 << (len(patt) * 4))
         if not patt:
             error("no pattern defined")
@@ -473,13 +473,13 @@ class pattern(feature):
             tiles = [(index >> (4 * i)) & 0x0f for i in range(len(iso))]
             out(f"#{self.nameof(iso)}[{self.nameof(tiles)}] = {self[index]}")
 
-    def indexof(self, patt : list[int], b : board) -> int:
+    def indexof(self, patt : List[int], b : board) -> int:
         index = 0
         for i, pos in enumerate(patt):
             index |= b.at(pos) << (4 * i)
         return index
 
-    def nameof(self, patt : list[int]) -> str:
+    def nameof(self, patt : List[int]) -> str:
         return "".join([f"{p:x}" for p in patt])
 
 
@@ -646,7 +646,7 @@ class learning:
             # debug("test", mv)
         return best
 
-    def learn_from_episode(self, path : list[move], alpha : float = 0.1) -> None:
+    def learn_from_episode(self, path : List[move], alpha : float = 0.1) -> None:
         """
         learn from the records in an episode
 
