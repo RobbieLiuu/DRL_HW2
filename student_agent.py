@@ -395,7 +395,7 @@ def get_action(state, score):
     # You can submit this random agent to evaluate the performance of a purely random strategy.
     if approximator is None:
         approximator = load_approximator_from_bin()
-
+    
     bitboard = np_to_board(state)
     root = TD_MCTS_Node(bitboard, score)
     td_mcts = TD_MCTS(approximator, iterations=500, exploration_constant=1.41, rollout_depth=20, gamma=0.99)
@@ -404,6 +404,7 @@ def get_action(state, score):
         td_mcts.run_simulation(root)
 
     best_act, _ = td_mcts.best_action_distribution(root)
+    print(score,best_act)
     return best_act
 
 
