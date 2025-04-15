@@ -233,6 +233,37 @@ class Game2048Env(gym.Env):
 
 
 
+class BoardAdapter:
+    def __init__(self, game_env):
+        self.game_env = game_env
+        self.board_obj = board()  # The new bit-based board
+        self.sync_to_board()
+    
+    def sync_to_board(self):
+        """Convert Game2048Env board to bit-based board"""
+        self.board_obj = board(0)  # Reset board
+        for i in range(4):
+            for j in range(4):
+                # Convert values like 0, 2, 4, 8... to 0, 1, 2, 3...
+                val = self.game_env.board[i, j]
+                if val > 0:
+                    index = int(math.log2(val))
+                else:
+                    index = 0
+                self.board_obj.set(i * 4 + j, index)
+        return self.board_obj
+    
+    def sync_from_board(self):
+        """Convert bit-based board to Game2048Env board"""
+        for i in range(4):
+            for j in range(4):
+                # Convert values like 0, 1, 2, 3... to 0, 2, 4, 8...
+                index = self.board_obj.at(i * 4 + j)
+                if index > 0:
+                    val = 2 ** index
+                else:
+                    val = 0
+                self.game_env.board[i, j] = val
 
 
 
@@ -241,119 +272,149 @@ class Game2048Env(gym.Env):
 
 
 
-
-
+# Node for TD-MCTS using the TD-trained value approximator
 class TD_MCTS_Node:
-    def __init__(self, board_state, score, parent=None, action=None):
-        self.state = board_state
+    def __init__(self,env, state, score, parent=None, action=None):
+        """
+        state: current board state (numpy array)
+        score: cumulative score at this node
+        parent: parent node (None for root)
+        action: action taken from parent to reach this node
+        """
+        self.state = state
         self.score = score
         self.parent = parent
         self.action = action
         self.children = {}
         self.visits = 0
         self.total_reward = 0.0
-        self.untried_actions = [a for a in range(4) if self.is_move_legal(a)]
-
-    def is_move_legal(self, action):
-        sim = board(self.state)
-        return sim.move(action) != -1
+        # List of untried actions based on the current state's legal moves
+        self.untried_actions = [a for a in range(4) if env.is_move_legal(a)]
 
     def fully_expanded(self):
+        # A node is fully expanded if no legal actions remain untried.
         return len(self.untried_actions) == 0
 
+
+# TD-MCTS class utilizing a trained approximator for leaf evaluation
 class TD_MCTS:
-    def __init__(self, approximator, iterations=500, exploration_constant=1.41, rollout_depth=10, gamma=0.99):
+    def __init__(self, env, approximator, iterations=500, exploration_constant=1.41, rollout_depth=10, gamma=0.99):
+        self.env = env
         self.approximator = approximator
         self.iterations = iterations
         self.c = exploration_constant
         self.rollout_depth = rollout_depth
         self.gamma = gamma
 
+    def create_env_from_state(self, state, score):
+        # Create a deep copy of the environment with the given state and score.
+        new_env = copy.deepcopy(self.env)
+        new_env.board = state.copy()
+        new_env.score = score
+        return new_env
+
     def select_child(self, node):
+        # TODO: Use the UCT formula: Q + c * sqrt(log(parent.visits)/child.visits) to select the best child.
         best_val = -float("inf")
         best_child = None
+        parent = node
         for child in node.children.values():
             if child.visits == 0:
                 UCT_val = float("inf")
             else:
                 Q = child.total_reward / child.visits
-                UCT_val = Q + self.c * math.sqrt(math.log(node.visits) / child.visits)
+                UCT_val = Q + self.c * math.sqrt(math.log(parent.visits) / child.visits)
             if UCT_val > best_val:
-                best_val = UCT_val
                 best_child = child
+                best_val = UCT_val
         return best_child
 
-    def evaluate_afterstate(self, b):
-        max_value = float("-inf")
-        for action in range(4):
-            after = board(b)
-            score = after.move(action)
-            if score == -1:
-                continue
-            val = score + self.approximator.estimate(after)
-            if val > max_value:
-                max_value = val
-        return max_value if max_value != float("-inf") else 0
 
-    def rollout(self, b, score, depth):
+    def evaluate_afterstate(self, env):
+        legal_actions = [a for a in range(4) if env.is_move_legal(a)]
+        if not legal_actions:
+            return 0
+
+        max_value = float('-inf')
+        for action in legal_actions:
+            env_copy = copy.deepcopy(env)
+            afterstate, _, _, _ = env_copy.step(action, add_random=False)
+
+            adapter = BoardAdapter(env)
+            bit_board = adapter.sync_to_board()
+
+            if self.approximator.value(bit_board) is not None:
+              value = self.approximator.value(bit_board)
+            if value >= max_value:
+                max_value = value
+
+        return max_value
+
+
+    def rollout(self, sim_env, depth):
+        # TODO: Perform a random rollout until reaching the maximum depth or a terminal state.
+        # TODO: Use the approximator to evaluate the final state.
         total_reward = 0
-        gamma_factor = 1
-        current_board = board(b)
-        current_score = score
+        cur_deteriorate_rate = 1
+        cur_depth = 0
+        while cur_depth < depth:
+            legal_moves = [a for a in range(4) if sim_env.is_move_legal(a)]
+            if not legal_moves:
+                break
+            selected_action = random.choice(legal_moves)
+            previous_score = sim_env.score
+            _, _, is_terminal, _ = sim_env.step(selected_action)
+            total_reward += cur_deteriorate_rate * (sim_env.score - previous_score)
+            cur_deteriorate_rate *= self.gamma
+            cur_depth += 1 
+            if is_terminal:
+                return total_reward
 
-        for _ in range(depth):
-            legal_actions = [a for a in range(4) if board(current_board).move(a) != -1]
-            if not legal_actions:
-                break
-            a = random.choice(legal_actions)
-            after = board(current_board)
-            reward = after.move(a)
-            if reward == -1:
-                break
-            total_reward += gamma_factor * reward
-            gamma_factor *= self.gamma
-            current_board = board(after)
-            current_board.popup()
-        estimate = self.approximator.estimate(current_board)
-        total_reward += gamma_factor * estimate
+        estimated_value = self.evaluate_afterstate(sim_env)
+        total_reward = total_reward + cur_deteriorate_rate * estimated_value
+
         return total_reward
 
+
+
+
+
     def backpropagate(self, node, reward):
+        # TODO: Propagate the obtained reward back up the tree.
         while node is not None:
             node.visits += 1
             node.total_reward += (reward - node.total_reward) / node.visits
             node = node.parent
 
+
     def run_simulation(self, root):
         node = root
-        sim_board = board(node.state)
-        sim_score = node.score
+        sim_env = self.create_env_from_state(node.state, node.score)
 
-        while node.fully_expanded() and node.children:
+        # TODO: Selection: Traverse the tree until reaching an unexpanded node.
+
+        while node.fully_expanded() == True and node.children:
             node = self.select_child(node)
-            reward = sim_board.move(node.action)
-            if reward == -1:
-                break
-            sim_score += reward
-            sim_board.popup()
+            sim_env.step(node.action)
 
-        if not node.fully_expanded():
-            a = random.choice(node.untried_actions)
-            new_board = board(sim_board)
-            reward = new_board.move(a)
-            if reward == -1:
-                return
-            new_board.popup()
-            new_score = sim_score + reward
-            child = TD_MCTS_Node(new_board, new_score, parent=node, action=a)
-            node.children[a] = child
-            node.untried_actions.remove(a)
-            node = child
+        # TODO: Expansion: If the node is not terminal, expand an untried action.
 
-        rollout_reward = self.rollout(node.state, node.score, self.rollout_depth)
+        if node.fully_expanded() == False:
+            selected_action = random.choice(node.untried_actions)
+            sim_env.step(selected_action)
+            newNode = TD_MCTS_Node(sim_env, sim_env.board.copy(), sim_env.score, parent=node, action=selected_action)
+            node.children[selected_action] = newNode
+            node.untried_actions.remove(selected_action)
+            node = newNode
+
+
+        # Rollout: Simulate a random game from the expanded node.
+        rollout_reward = self.rollout(sim_env, self.rollout_depth)
+        # Backpropagate the obtained reward.
         self.backpropagate(node, rollout_reward)
 
     def best_action_distribution(self, root):
+        # Compute the normalized visit count distribution for each child of the root.
         total_visits = sum(child.visits for child in root.children.values())
         distribution = np.zeros(4)
         best_visits = -1
