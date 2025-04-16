@@ -477,7 +477,6 @@ def get_action(state, score):
     env.score = score
     
     td_mcts = TD_MCTS(env, approximator, iterations=200, exploration_constant=1.41, rollout_depth=0, gamma=0.99) #1.41
-
     
     root = TD_MCTS_Node(env,state, env.score)
 
