@@ -509,18 +509,18 @@ def get_action(state, score):
     return  best_act
 
 
-if __name__ == "__main__":
-    env = Game2048Env()
-    state = env.reset()
-    done = False
-    score = 0
-    while not done:
-        legal_moves = [action for action in range(4) if env.is_move_legal(action)]
-        if not legal_moves:
-            break
+# if __name__ == "__main__":
+#     env = Game2048Env()
+#     state = env.reset()
+#     done = False
+#     score = 0
+#     while not done:
+#         legal_moves = [action for action in range(4) if env.is_move_legal(action)]
+#         if not legal_moves:
+#             break
 
-        action = get_action(state, score)
+#         action = get_action(state, score)
         
-        state, score, done, _ = env.step(action)  
-        print(state)
-        print("score: ",score)
+#         state, score, done, _ = env.step(action)  
+#         print(state)
+#         print("score: ",score)
