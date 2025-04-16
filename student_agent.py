@@ -505,7 +505,7 @@ def get_action(state, score):
 
 
 
-  #  print("TD-MCTS selected action:", best_act)
+    print("TD-MCTS selected action:", best_act)
 
     return  best_act
 
