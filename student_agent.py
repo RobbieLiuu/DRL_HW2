@@ -476,7 +476,7 @@ def get_action(state, score):
     env.board = state.copy()
     env.score = score
     
-    td_mcts = TD_MCTS(env, approximator, iterations=100, exploration_constant=1, rollout_depth=10, gamma=0.99) #1.41
+    td_mcts = TD_MCTS(env, approximator, iterations=500, exploration_constant=1.41, rollout_depth=0, gamma=0.99) #1.41
 
     
     root = TD_MCTS_Node(env,state, env.score)
@@ -505,25 +505,25 @@ def get_action(state, score):
 
 
 
-    print("TD-MCTS selected action:", best_act)
+  #  print("TD-MCTS selected action:", best_act)
 
     return  best_act
 
 
 # main function for testing the agent
-if __name__ == "__main__":
-    env = Game2048Env()
-    state = env.reset()
-    done = False
-    score = 0
-    while not done:
-        legal_moves = [a for a in range(4) if env.is_move_legal(a)]
-        if not legal_moves:
-            break
-        # Use the MCTS agent to get the best action
-        action = get_action(state, score)
+# if __name__ == "__main__":
+#     env = Game2048Env()
+#     state = env.reset()
+#     done = False
+#     score = 0
+#     while not done:
+#         legal_moves = [a for a in range(4) if env.is_move_legal(a)]
+#         if not legal_moves:
+#             break
+#         # Use the MCTS agent to get the best action
+#         action = get_action(state, score)
         
-        # Apply the selected action
-        state, score, done, _ = env.step(action)  
-        print(state)
-        print("score: ",score)
+#         # Apply the selected action
+#         state, score, done, _ = env.step(action)  
+#         print(state)
+#         print("score: ",score)
