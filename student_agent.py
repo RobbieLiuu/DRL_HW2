@@ -510,20 +510,18 @@ def get_action(state, score):
     return  best_act
 
 
-# main function for testing the agent
-# if __name__ == "__main__":
-#     env = Game2048Env()
-#     state = env.reset()
-#     done = False
-#     score = 0
-#     while not done:
-#         legal_moves = [a for a in range(4) if env.is_move_legal(a)]
-#         if not legal_moves:
-#             break
-#         # Use the MCTS agent to get the best action
-#         action = get_action(state, score)
+if __name__ == "__main__":
+    env = Game2048Env()
+    state = env.reset()
+    done = False
+    score = 0
+    while not done:
+        legal_moves = [action for action in range(4) if env.is_move_legal(action)]
+        if not legal_moves:
+            break
+
+        action = get_action(state, score)
         
-#         # Apply the selected action
-#         state, score, done, _ = env.step(action)  
-#         print(state)
-#         print("score: ",score)
+        state, score, done, _ = env.step(action)  
+        print(state)
+        print("score: ",score)
